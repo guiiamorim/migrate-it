@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    env:
+      # Minimum total statement coverage required to pass. This is a floor to
+      # prevent regressions and untested changes; ratchet it up as coverage grows.
+      COVERAGE_THRESHOLD: "45"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check formatting
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test with coverage
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Enforce coverage threshold
+        run: |
+          total="$(go tool cover -func=coverage.out | awk '/^total:/{print substr($NF, 1, length($NF)-1)}')"
+          echo "Total coverage: ${total}% (threshold: ${COVERAGE_THRESHOLD}%)"
+          {
+            echo "### Coverage: ${total}% (minimum ${COVERAGE_THRESHOLD}%)"
+            echo ""
+            echo '```'
+            go tool cover -func=coverage.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          awk -v c="$total" -v t="$COVERAGE_THRESHOLD" 'BEGIN { exit (c+0 < t+0) ? 1 : 0 }' || {
+            echo "::error::Total coverage ${total}% is below the required ${COVERAGE_THRESHOLD}%. Add tests for your changes."
+            exit 1
+          }
+
+      - name: Generate HTML coverage report
+        if: always()
+        run: go tool cover -html=coverage.out -o coverage.html || true
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.html
+          if-no-files-found: ignore
