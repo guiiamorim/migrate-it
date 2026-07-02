@@ -1,15 +1,15 @@
 package mysql
 
 import (
-	"github.com/guiiamorim/migrateit/internal/reflection"
+	"github.com/guiiamorim/migrateit/internal/schema"
 )
 
 const (
-	PrimaryKey reflection.ConstraintType = "PRIMARY KEY"
-	Unique     reflection.ConstraintType = "UNIQUE"
-	NotNull    reflection.ConstraintType = "NOT NULL"
-	ForeignKey reflection.ConstraintType = "FOREIGN KEY"
-	Check      reflection.ConstraintType = "CHECK"
-	Default    reflection.ConstraintType = "DEFAULT"
-	Index      reflection.ConstraintType = "CREATE INDEX"
+	PrimaryKey schema.ConstraintType = "PRIMARY KEY"
+	Unique     schema.ConstraintType = "UNIQUE"
+	NotNull    schema.ConstraintType = "NOT NULL"
+	ForeignKey schema.ConstraintType = "FOREIGN KEY"
+	Check      schema.ConstraintType = "CHECK"
+	Default    schema.ConstraintType = "DEFAULT"
+	Index      schema.ConstraintType = "INDEX"
 )

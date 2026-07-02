@@ -52,6 +52,17 @@ func (c *Connection) Disconnect() error {
 	return nil
 }
 
+// DB returns the underlying *sql.DB so that the reflection layer can query
+// information_schema directly. It is nil until Connect has succeeded.
+func (c *Connection) DB() *sql.DB {
+	return c.db
+}
+
+// Database returns the name of the schema this connection targets.
+func (c *Connection) Database() string {
+	return c.config.Database
+}
+
 func (c *Connection) GetTableNames() ([]string, error) {
 	rows, err := c.db.Query("SHOW TABLES")
 	if err != nil {
